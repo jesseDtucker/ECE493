@@ -29,13 +29,14 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     final int MAX_IMG_WIDTH = 2048;
     final int MAX_IMG_HEIGHT = 2048;
 
-    final float HOLD_TIME = 2.7f; // seconds;
-    final float SWIPE_DISTANCE = 20.0f; // pixels?
+    final float HOLD_TIME = 0.6f; // seconds;
+    final float SWIPE_DISTANCE = 25.0f;
 
     Bitmap m_selectedImage = null;
     String m_selectedFilterName = "";
     ProgressDialog m_progressDialog = null;
     GestureHelper m_gestureHelper = null;
+    GestureOverlay m_gestureOverlay = null;
 
     // Courtesy of : http://stackoverflow.com/questions/364985/algorithm-for-finding-the-smallest-power-of-two-thats-greater-or-equal-to-a-giv
     private static int NextLargestPowerOfTwo(int x)
@@ -92,6 +93,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         filterControls.setEnabled(false);
 
         m_gestureHelper = new GestureHelper(HOLD_TIME, SWIPE_DISTANCE, this);
+        m_gestureOverlay = (GestureOverlay) findViewById(R.id.v_gestureOverlay);
 
         ImageView imgView = (ImageView) findViewById(R.id.image_view);
         imgView.setOnTouchListener(m_gestureHelper);
@@ -207,61 +209,61 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     @Override
     public void OnHoldStart(GestureHelper.HoldInfo holdInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.SetHold(holdInfo);
     }
 
     @Override
     public void OnHoldContinue(GestureHelper.HoldInfo holdInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.SetHold(holdInfo);
     }
 
     @Override
     public void OnHoldEnd(GestureHelper.HoldInfo holdInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.Clear();
     }
 
     @Override
     public void OnPinchStart(GestureHelper.PinchInfo pinchInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.SetPinch(pinchInfo);
     }
 
     @Override
     public void OnPinchContinue(GestureHelper.PinchInfo pinchInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.SetPinch(pinchInfo);
     }
 
     @Override
     public void OnPinchEnd(GestureHelper.PinchInfo pinchInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.Clear();
     }
 
     @Override
     public void OnSwipeStart(GestureHelper.SwipeInfo swipeInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.SetSwipe(swipeInfo);
     }
 
     @Override
     public void OnSwipeMove(GestureHelper.SwipeInfo swipeInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.SetSwipe(swipeInfo);
     }
 
     @Override
     public void OnSwipeEnd(GestureHelper.SwipeInfo swipeInfo)
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.Clear();
     }
 
     @Override
     public void Cancel()
     {
-        Util.Fail("TODO::JT");
+        m_gestureOverlay.Clear();
     }
 
     /**

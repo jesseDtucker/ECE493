@@ -1,5 +1,7 @@
 package jetucker.cmput293assignment1;
 
+import android.graphics.Point;
+
 /**
  * Util functions
  */
@@ -31,5 +33,26 @@ public class Util
         {
             throw new AssertionError(message);
         }
+    }
+
+    public static int GetDistSquared(Point p1, Point p2)
+    {
+        int xSqrd = (p1.x - p2.x)* (p1.x - p2.x);
+        int ySqrd = (p1.y - p2.y) * (p1.y - p2.y);
+        return xSqrd + ySqrd;
+    }
+
+    public static float GetAngle(Point p1, Point p2)
+    {
+        return (float)Math.atan2(   p1.y - p2.y,
+                                    p1.x - p2.x);
+    }
+
+    // Thanks to stack overflow: http://stackoverflow.com/questions/3365171/calculating-the-angle-between-two-lines-without-having-to-calculate-the-slope
+    public static float AngleBetween2Lines(Point line1Point1, Point line1Point2, Point line2Point1, Point line2Point2)
+    {
+        float angle1 = GetAngle(line1Point1, line1Point2);
+        float angle2 = GetAngle(line2Point1, line2Point2);
+        return (float)(angle1-angle2);
     }
 }

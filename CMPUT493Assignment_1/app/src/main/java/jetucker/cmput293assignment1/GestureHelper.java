@@ -44,10 +44,6 @@ public final class GestureHelper implements View.OnTouchListener
         {
             m_lastDownPoint = new Point((int)(e.getX(0)), (int)(e.getY(0)));
         }
-        else if(action == MotionEvent.ACTION_UP)
-        {
-            m_lastDownPoint = null;
-        }
 
         if(m_isTrackingGesture)
         {
@@ -70,10 +66,7 @@ public final class GestureHelper implements View.OnTouchListener
     private void OnTouch(MotionEvent e)
     {
         Point currentPoint = new Point((int)(e.getX(0)), (int)(e.getY(0)));
-
-        int xSqrd = (currentPoint.x - m_lastDownPoint.x);
-        int ySqrd = (currentPoint.y - m_lastDownPoint.y);
-        int distanceSqrdFromLastDown = xSqrd + ySqrd;
+        int distanceSqrdFromLastDown = Util.GetDistSquared(currentPoint, m_lastDownPoint);
 
         long timeDown = e.getEventTime() - e.getDownTime();
         if(timeDown > m_holdTime * 1000)
@@ -95,6 +88,8 @@ public final class GestureHelper implements View.OnTouchListener
             m_pinchInfo.CurrentP2 = new Point((int)(e.getX(1)), (int)(e.getY(1)));
             m_pinchInfo.StartP1 = m_pinchInfo.CurrentP1;
             m_pinchInfo.StartP2 = m_pinchInfo.CurrentP2;
+
+            m_listener.OnPinchStart(m_pinchInfo);
         }
         else if(distanceSqrdFromLastDown > m_swipeDistanceSquared)
         {
@@ -102,7 +97,9 @@ public final class GestureHelper implements View.OnTouchListener
             // Note: I don't care how long this takes to start, velocity is not important
             m_swipeInfo = new SwipeInfo();
             m_swipeInfo.CurrentPoint = currentPoint;
-            m_swipeInfo.StartPoint = currentPoint;
+            m_swipeInfo.StartPoint = m_lastDownPoint;
+
+            m_listener.OnSwipeStart(m_swipeInfo);
         }
     }
     
@@ -127,16 +124,7 @@ public final class GestureHelper implements View.OnTouchListener
         int action = MotionEventCompat.getActionMasked(e);
         Point currentPoint = new Point((int)(e.getX(0)), (int)(e.getY(0)));
 
-        int xSqrd = (currentPoint.x - m_lastDownPoint.x);
-        int ySqrd = (currentPoint.y - m_lastDownPoint.y);
-        int distanceSqrdFromLastDown = xSqrd + ySqrd;
-
-        if(distanceSqrdFromLastDown > m_swipeDistanceSquared)
-        {
-            m_holdInfo = null;
-            m_listener.Cancel();
-        }
-        else if(action == MotionEvent.ACTION_MOVE)
+        if(action == MotionEvent.ACTION_MOVE)
         {
             m_holdInfo.timeHeld = e.getEventTime() - e.getDownTime();
             m_listener.OnHoldContinue(m_holdInfo);
@@ -168,16 +156,13 @@ public final class GestureHelper implements View.OnTouchListener
     {
         int action = MotionEventCompat.getActionMasked(e);
 
-        Point pointOne = null;
-        Point pointTwo = null;
-
         if(e.getPointerCount() >= 1)
         {
             m_pinchInfo.CurrentP1 = new Point((int)(e.getX(0)), (int)(e.getY(0)));
         }
         if(e.getPointerCount() >= 2)
         {
-            m_pinchInfo.CurrentP1 = new Point((int)(e.getX(1)), (int)(e.getY(1)));
+            m_pinchInfo.CurrentP2 = new Point((int)(e.getX(1)), (int)(e.getY(1)));
         }
 
         if(action == MotionEvent.ACTION_MOVE)

@@ -18,9 +18,6 @@ uchar4 __attribute__((kernel)) bulge(uchar4 in, uint32_t x, uint32_t y)
 	float2 poscur = {x, y};
 	float radius = fast_distance(poscur, m_center);
 
-	rsDebug("radius : ", radius);
-	rsDebug("poscur : ", poscur);
-
 	uchar4 result = in;
 	if(radius < m_radius)
 	{
