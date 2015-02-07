@@ -21,16 +21,21 @@ import android.widget.Toast;
 
 import java.io.FileNotFoundException;
 
-public class MainActivity extends ActionBarActivity implements AdapterView.OnItemSelectedListener
+public class MainActivity extends ActionBarActivity implements AdapterView.OnItemSelectedListener, GestureHelper.IGestureListener
 {
     static final int PICK_PHOTO = 100;
     // max width or height the application will accept. Anything
     // larger will be downsampled
     final int MAX_IMG_WIDTH = 2048;
     final int MAX_IMG_HEIGHT = 2048;
+
+    final float HOLD_TIME = 2.7f; // seconds;
+    final float SWIPE_DISTANCE = 20.0f; // pixels?
+
     Bitmap m_selectedImage = null;
     String m_selectedFilterName = "";
     ProgressDialog m_progressDialog = null;
+    GestureHelper m_gestureHelper = null;
 
     // Courtesy of : http://stackoverflow.com/questions/364985/algorithm-for-finding-the-smallest-power-of-two-thats-greater-or-equal-to-a-giv
     private static int NextLargestPowerOfTwo(int x)
@@ -85,6 +90,11 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
         Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
         filterControls.setEnabled(false);
+
+        m_gestureHelper = new GestureHelper(HOLD_TIME, SWIPE_DISTANCE, this);
+
+        ImageView imgView = (ImageView) findViewById(R.id.image_view);
+        imgView.setOnTouchListener(m_gestureHelper);
     }
 
     public void SelectImage(View v)
@@ -194,6 +204,66 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         // Do Nothing
     }
 
+    @Override
+    public void OnHoldStart(GestureHelper.HoldInfo holdInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnHoldContinue(GestureHelper.HoldInfo holdInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnHoldEnd(GestureHelper.HoldInfo holdInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnPinchStart(GestureHelper.PinchInfo pinchInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnPinchContinue(GestureHelper.PinchInfo pinchInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnPinchEnd(GestureHelper.PinchInfo pinchInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnSwipeStart(GestureHelper.SwipeInfo swipeInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnSwipeMove(GestureHelper.SwipeInfo swipeInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void OnSwipeEnd(GestureHelper.SwipeInfo swipeInfo)
+    {
+        Util.Fail("TODO::JT");
+    }
+
+    @Override
+    public void Cancel()
+    {
+        Util.Fail("TODO::JT");
+    }
+
     /**
      * Simple task for performing the bitmap filtering.
      * Will update the progress dialogue as it works.
@@ -223,7 +293,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             {
                 case "Median Filter":
                     m_filterSize = Settings.GetMedianFilterSize(getApplicationContext());
-                    result = (new Bulge(getApplicationContext(), pos, radius)).ApplyFilter(m_source, listener);
+                    result = (new PartialBlockify(getApplicationContext(), 25.0f, 25.0f, 0.5f)).ApplyFilter(m_source, listener);
                     break;
                 case "Mean Filter":
                     m_filterSize = Settings.GetMeanFilterSize(getApplicationContext());
