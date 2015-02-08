@@ -73,10 +73,10 @@ public final class GestureHelper implements View.OnTouchListener
         {
             // pointer has been down long enough for it to be a hold
             m_holdInfo = new HoldInfo();
-            m_holdInfo.centerPoint = new Point();
-            m_holdInfo.centerPoint.x = (int)(e.getX());
-            m_holdInfo.centerPoint.y = (int)(e.getY());
-            m_holdInfo.timeHeld = timeDown;
+            m_holdInfo.CenterPoint = new Point();
+            m_holdInfo.CenterPoint.x = (int)(e.getX());
+            m_holdInfo.CenterPoint.y = (int)(e.getY());
+            m_holdInfo.TimeHeld = timeDown;
 
             m_listener.OnHoldStart(m_holdInfo);
         }
@@ -126,7 +126,7 @@ public final class GestureHelper implements View.OnTouchListener
 
         if(action == MotionEvent.ACTION_MOVE)
         {
-            m_holdInfo.timeHeld = e.getEventTime() - e.getDownTime();
+            m_holdInfo.TimeHeld = e.getEventTime() - e.getDownTime();
             m_listener.OnHoldContinue(m_holdInfo);
         }
         else if(action == MotionEvent.ACTION_UP)
@@ -156,17 +156,18 @@ public final class GestureHelper implements View.OnTouchListener
     {
         int action = MotionEventCompat.getActionMasked(e);
 
-        if(e.getPointerCount() >= 1)
-        {
-            m_pinchInfo.CurrentP1 = new Point((int)(e.getX(0)), (int)(e.getY(0)));
-        }
-        if(e.getPointerCount() >= 2)
-        {
-            m_pinchInfo.CurrentP2 = new Point((int)(e.getX(1)), (int)(e.getY(1)));
-        }
-
         if(action == MotionEvent.ACTION_MOVE)
         {
+            // only update on a move
+            if(e.getPointerCount() >= 1)
+            {
+                m_pinchInfo.CurrentP1 = new Point((int)(e.getX(0)), (int)(e.getY(0)));
+            }
+            if(e.getPointerCount() >= 2)
+            {
+                m_pinchInfo.CurrentP2 = new Point((int)(e.getX(1)), (int)(e.getY(1)));
+            }
+
             m_listener.OnPinchContinue(m_pinchInfo);
         }
         else if(action == MotionEvent.ACTION_UP || e.getPointerCount() < 2)
@@ -178,9 +179,15 @@ public final class GestureHelper implements View.OnTouchListener
 
     class HoldInfo
     {
-        public long timeHeld = 0; // milliseconds
-        public Point centerPoint;
-        public float radius;
+        public long TimeHeld = 0; // milliseconds
+        public Point CenterPoint;
+        public static final float HOLD_RADIAL_SPEED = 110.0f; // per second
+
+        public float Radius()
+        {
+            Util.Assert(TimeHeld > 0);
+            return (float)(TimeHeld) / 1000.0f * HOLD_RADIAL_SPEED;
+        }
     }
 
     class PinchInfo
@@ -189,14 +196,37 @@ public final class GestureHelper implements View.OnTouchListener
         public Point CurrentP2;
         public Point StartP1;
         public Point StartP2;
-        public float Angle;
+
+        public float Angle()
+        {
+            return Util.AngleBetween2Lines( StartP1, StartP2,
+                                            CurrentP1, CurrentP2);
+        }
+
+        public Point Center()
+        {
+            Point curCenter = new Point();
+            curCenter.x = (CurrentP1.x + CurrentP2.x) / 2;
+            curCenter.y = (CurrentP1.y + CurrentP2.y) / 2;
+
+            return curCenter;
+        }
+
+        public float Radius()
+        {
+            return (float)(Math.sqrt(Util.GetDistSquared(Center(), CurrentP1)));
+        }
     }
 
     class SwipeInfo
     {
         public Point StartPoint;
         public Point CurrentPoint;
-        public float Strength;
+
+        public float Strength()
+        {
+            return 5.0f;
+        }
     }
 
     interface IGestureListener

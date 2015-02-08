@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -157,7 +156,17 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             return;
         }
 
-        if(m_filterTask != null)
+        LaunchFilter();
+    }
+
+    private void LaunchFilter()
+    {
+        LaunchFilter(null);
+    }
+
+    private void LaunchFilter(FilterBase filter)
+    {
+        if(m_filterTask != null || m_selectedImage == null)
         {
             return;
         }
@@ -170,7 +179,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         m_progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         m_progressDialog.show();
 
-        m_filterTask = new FilterTask(m_selectedImage);
+        m_filterTask = new FilterTask(m_selectedImage, filter);
         m_filterTask.execute(m_selectedFilterName);
     }
 
@@ -229,6 +238,9 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     public void OnHoldEnd(GestureHelper.HoldInfo holdInfo)
     {
         m_gestureOverlay.Clear();
+
+        Bulge bulge = new Bulge(getApplicationContext(), holdInfo.CenterPoint, holdInfo.Radius());
+        LaunchFilter(bulge);
     }
 
     @Override
@@ -247,6 +259,9 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     public void OnPinchEnd(GestureHelper.PinchInfo pinchInfo)
     {
         m_gestureOverlay.Clear();
+
+        RadialTwist twist = new RadialTwist(pinchInfo.Center(), pinchInfo.Radius(), pinchInfo.Angle(), getApplicationContext());
+        LaunchFilter(twist);
     }
 
     @Override
@@ -265,6 +280,9 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     public void OnSwipeEnd(GestureHelper.SwipeInfo swipeInfo)
     {
         m_gestureOverlay.Clear();
+
+        PartialBlockify blocky = new PartialBlockify(getApplicationContext(), 5.0f, 5.0f, 0.5f);
+        LaunchFilter(blocky);
     }
 
     @Override
@@ -292,7 +310,6 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         public FilterTask(Bitmap bmp, FilterBase filter)
         {
             Util.Assert(bmp != null, "Cannot filter a null bitmap!");
-            Util.Assert(filter != null, "Null filter makes no sense, call the other ctor!");
             m_source = bmp;
             m_filter = filter;
         }

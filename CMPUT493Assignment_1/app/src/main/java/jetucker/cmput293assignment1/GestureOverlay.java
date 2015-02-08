@@ -22,7 +22,6 @@ public final class GestureOverlay extends SurfaceView implements SurfaceHolder.C
     private final float FPS = 60.0f;
     private final String TAG = "GestureOverlay";
 
-    public static final float HOLD_RADIAL_SPEED = 110.0f; // per second
     private static final float FINGER_SIZE = 60.0f; // assumed radius of a finger, roughly speaking
     private static final float BORDER_WIDTH = 5.0f;
     private static final float LINE_WIDTH = 20.0f;
@@ -255,15 +254,12 @@ public final class GestureOverlay extends SurfaceView implements SurfaceHolder.C
                 pinchInfo.CurrentP2.x, pinchInfo.CurrentP2.y,
                 s_line);
 
-        Point curCenter = new Point();
-        curCenter.x = (pinchInfo.CurrentP1.x + pinchInfo.CurrentP2.x) / 2;
-        curCenter.y = (pinchInfo.CurrentP1.y + pinchInfo.CurrentP2.y) / 2;
-        float radius = (float)(Math.sqrt(Util.GetDistSquared(curCenter, pinchInfo.CurrentP1)));
+        Point curCenter = pinchInfo.Center();
+        float radius = pinchInfo.Radius();
 
         canvas.drawCircle(curCenter.x, curCenter.y, radius, s_border);
 
-        float angle = Util.AngleBetween2Lines(pinchInfo.StartP1, pinchInfo.StartP2,
-                pinchInfo.CurrentP1, pinchInfo.CurrentP2);
+        float angle = pinchInfo.Angle();
         angle = (float)Math.toDegrees(angle);
         angle = angle < -180.0f ? angle + 360.0f : angle;
 
@@ -301,12 +297,8 @@ public final class GestureOverlay extends SurfaceView implements SurfaceHolder.C
 
     private static void DrawHold(GestureHelper.HoldInfo holdInfo, Canvas canvas)
     {
-        float secondsDown = holdInfo.timeHeld / 1000.0f;
-        float radius = secondsDown * HOLD_RADIAL_SPEED;
-        holdInfo.radius = radius;
-
-        DrawCircle(holdInfo.centerPoint.x,
-                holdInfo.centerPoint.y,
-                radius, canvas);
+        DrawCircle(holdInfo.CenterPoint.x,
+                holdInfo.CenterPoint.y,
+                holdInfo.Radius(), canvas);
     }
 }
