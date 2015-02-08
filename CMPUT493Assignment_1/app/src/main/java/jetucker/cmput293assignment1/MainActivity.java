@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -28,8 +29,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     final int MAX_IMG_WIDTH = 2048;
     final int MAX_IMG_HEIGHT = 2048;
 
-    final float HOLD_TIME = 0.6f; // seconds;
-    final float SWIPE_DISTANCE = 25.0f;
+    final float HOLD_TIME = 0.8f; // seconds;
+    final float SWIPE_DISTANCE = 35.0f;
 
     Bitmap m_selectedImage = null;
     String m_selectedFilterName = "";
@@ -239,7 +240,15 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     {
         m_gestureOverlay.Clear();
 
-        Bulge bulge = new Bulge(getApplicationContext(), holdInfo.CenterPoint, holdInfo.Radius());
+        if(m_selectedImage == null)
+        {
+            return;
+        }
+
+        Point center = FromViewToImg(holdInfo.CenterPoint);
+        float radius = FromViewToImg(holdInfo.Radius());
+
+        Bulge bulge = new Bulge(getApplicationContext(), center, radius);
         LaunchFilter(bulge);
     }
 
@@ -260,7 +269,14 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     {
         m_gestureOverlay.Clear();
 
-        RadialTwist twist = new RadialTwist(pinchInfo.Center(), pinchInfo.Radius(), pinchInfo.Angle(), getApplicationContext());
+        if(m_selectedImage == null)
+        {
+            return;
+        }
+
+        Point center = FromViewToImg(pinchInfo.Center());
+        float radius = FromViewToImg(pinchInfo.Radius());
+        RadialTwist twist = new RadialTwist(center, radius, -1.0f * pinchInfo.Angle(), getApplicationContext());
         LaunchFilter(twist);
     }
 
@@ -281,6 +297,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     {
         m_gestureOverlay.Clear();
 
+        // TODO::JT hook up strengths and distance
         PartialBlockify blocky = new PartialBlockify(getApplicationContext(), 5.0f, 5.0f, 0.5f);
         LaunchFilter(blocky);
     }
@@ -289,6 +306,32 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     public void Cancel()
     {
         m_gestureOverlay.Clear();
+    }
+
+    private float FromViewToImg(float dist)
+    {
+        ImageView imgView = (ImageView) findViewById(R.id.image_view);
+        float viewWidth = imgView.getWidth();
+        float viewHeight = imgView.getHeight();
+        float imgWidth = m_selectedImage.getWidth();
+        float imgHeight = m_selectedImage.getHeight();
+
+        float widthRatio = imgWidth / viewWidth;
+        float heightRatio = imgHeight / viewHeight;
+
+        float ratioToUse = Math.max(widthRatio, heightRatio);
+
+        return dist * ratioToUse;
+    }
+
+    private Point FromViewToImg(Point p)
+    {
+        Point result = new Point();
+
+        result.x = (int)FromViewToImg(p.x);
+        result.y = (int)FromViewToImg(p.y);
+
+        return result;
     }
 
     /**

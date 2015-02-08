@@ -18,6 +18,7 @@ public final class GestureHelper implements View.OnTouchListener
     private float m_swipeDistanceSquared = 0.0f;
     private IGestureListener m_listener;
     private boolean m_isTrackingGesture = false;
+    private long m_downTimeToIgnore = 0; // ignore any input with this downtime
 
     private HoldInfo m_holdInfo = null;
     private SwipeInfo m_swipeInfo = null;
@@ -39,6 +40,11 @@ public final class GestureHelper implements View.OnTouchListener
     @Override
     public boolean onTouch(View v, MotionEvent e)
     {
+        if(e.getDownTime() == m_downTimeToIgnore)
+        {
+            return false;
+        }
+
         int action = MotionEventCompat.getActionMasked(e);
         if(action == MotionEvent.ACTION_DOWN)
         {
@@ -122,7 +128,6 @@ public final class GestureHelper implements View.OnTouchListener
     private void TrackHold(MotionEvent e)
     {
         int action = MotionEventCompat.getActionMasked(e);
-        Point currentPoint = new Point((int)(e.getX(0)), (int)(e.getY(0)));
 
         if(action == MotionEvent.ACTION_MOVE)
         {
@@ -156,7 +161,13 @@ public final class GestureHelper implements View.OnTouchListener
     {
         int action = MotionEventCompat.getActionMasked(e);
 
-        if(action == MotionEvent.ACTION_MOVE)
+        if(action == MotionEvent.ACTION_UP || e.getPointerCount() < 2)
+        {
+            m_listener.OnPinchEnd(m_pinchInfo);
+            m_downTimeToIgnore = e.getDownTime();
+            m_pinchInfo = null;
+        }
+        else if(action == MotionEvent.ACTION_MOVE)
         {
             // only update on a move
             if(e.getPointerCount() >= 1)
@@ -170,18 +181,13 @@ public final class GestureHelper implements View.OnTouchListener
 
             m_listener.OnPinchContinue(m_pinchInfo);
         }
-        else if(action == MotionEvent.ACTION_UP || e.getPointerCount() < 2)
-        {
-            m_listener.OnPinchEnd(m_pinchInfo);
-            m_pinchInfo = null;
-        }
     }
 
     class HoldInfo
     {
         public long TimeHeld = 0; // milliseconds
         public Point CenterPoint;
-        public static final float HOLD_RADIAL_SPEED = 110.0f; // per second
+        public static final float HOLD_RADIAL_SPEED = 150.0f; // per second
 
         public float Radius()
         {
