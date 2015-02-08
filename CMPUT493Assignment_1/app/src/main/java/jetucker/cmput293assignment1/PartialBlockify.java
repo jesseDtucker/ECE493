@@ -12,7 +12,9 @@ import jetucker.cmput293assignment1.rs.ScriptC_PartialBlockify;
  */
 public class PartialBlockify extends FilterBase
 {
-    private RenderScript m_Rs;
+    private static RenderScript s_Rs;
+    private static ScriptC_PartialBlockify s_script;
+
     private float m_magnitude = 0.0f;
     private float m_period = 1.0f;
     private float m_strength = 0.5f;
@@ -23,7 +25,11 @@ public class PartialBlockify extends FilterBase
         Util.Assert(strength > 0.0f);
         Util.Assert(strength <= 1.0f);
 
-        m_Rs = RenderScript.create(context);
+        if(s_Rs == null)
+        {
+            s_Rs = RenderScript.create(context);
+        }
+
         m_magnitude = magnitude;
         m_period = period;
         m_strength = strength;
@@ -34,22 +40,23 @@ public class PartialBlockify extends FilterBase
     {
         Bitmap result = bmp.copy(Bitmap.Config.ARGB_8888, true);
 
-        Allocation inAlloc = Allocation.createFromBitmap(m_Rs, bmp);
-        Allocation outAlloc = Allocation.createFromBitmap(m_Rs, result);
-        ScriptC_PartialBlockify script = new ScriptC_PartialBlockify(m_Rs);
+        Allocation inAlloc = Allocation.createFromBitmap(s_Rs, bmp);
+        Allocation outAlloc = Allocation.createFromBitmap(s_Rs, result);
 
-        script.set_m_source(inAlloc);
-        script.set_m_width(bmp.getWidth());
-        script.set_m_height(bmp.getHeight());
-        script.set_m_magnitude(m_magnitude);
-        script.set_m_period(m_period);
-        script.set_m_strength(m_strength);
+        if(s_script == null)
+        {
+            s_script = new ScriptC_PartialBlockify(s_Rs);
+        }
 
-        script.forEach_partialBlockify(inAlloc, outAlloc);
+        s_script.set_m_source(inAlloc);
+        s_script.set_m_width(bmp.getWidth());
+        s_script.set_m_height(bmp.getHeight());
+        s_script.set_m_magnitude(m_magnitude);
+        s_script.set_m_period(m_period);
+        s_script.set_m_strength(m_strength);
+
+        s_script.forEach_partialBlockify(inAlloc, outAlloc);
         outAlloc.copyTo(result);
-
-        script.destroy();
-        m_Rs.destroy();
 
         return result;
     }

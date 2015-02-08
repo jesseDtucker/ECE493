@@ -8,6 +8,8 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -172,7 +174,10 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             return;
         }
 
-        m_progressDialog = new ProgressDialog(MainActivity.this);
+        if(m_progressDialog == null)
+        {
+            m_progressDialog = new ProgressDialog(MainActivity.this);
+        }
         m_progressDialog.setMessage("Processing Image...");
         m_progressDialog.setCancelable(false);
         m_progressDialog.setProgress(0);
@@ -389,7 +394,30 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
                 m_filter = SelectFilter(params[0]);
             }
 
-            result = m_filter.ApplyFilter(m_source, listener);
+            try
+            {
+                result = m_filter.ApplyFilter(m_source, listener);
+            }
+            catch(OutOfMemoryError ex)
+            {
+                // Note: this should never actually happen, but if it does
+                // happen this is when it will happen. Bug that caused it
+                // should be fixed. Leaving this code in to help
+                // diagnose any missed issues.
+                Handler handler = new Handler(Looper.getMainLooper());
+
+                handler.post(new Runnable() {
+
+                    @Override
+                    public void run()
+                    {
+                        Toast toast = Toast.makeText(getApplicationContext(),
+                                "Out of memory, please restart application.",
+                                Toast.LENGTH_LONG);
+                        toast.show();
+                    }
+                });
+            }
 
             return result;
         }
@@ -404,9 +432,13 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         @Override
         protected void onPostExecute(Bitmap bmp)
         {
-            m_selectedImage = bmp;
-            ImageView imgView = (ImageView) findViewById(R.id.image_view);
-            imgView.setImageBitmap(m_selectedImage);
+
+            if(bmp != null)
+            {
+                m_selectedImage = bmp;
+                ImageView imgView = (ImageView) findViewById(R.id.image_view);
+                imgView.setImageBitmap(m_selectedImage);
+            }
 
             m_progressDialog.hide();
             m_filterTask = null;

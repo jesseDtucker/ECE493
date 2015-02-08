@@ -18,7 +18,8 @@ public class RadialTwist extends FilterBase
     private float m_radius = 0.0f;
     private float m_twist = 0.0f;
 
-    private RenderScript m_Rs;
+    private static RenderScript s_Rs;
+    private static ScriptC_twist s_twistScript;
 
     /**
      * Creates a radial twist filter
@@ -41,7 +42,10 @@ public class RadialTwist extends FilterBase
         Util.Assert(radius > 0);
         Util.Assert(context != null);
 
-        m_Rs = RenderScript.create(context);
+        if(s_Rs == null)
+        {
+            s_Rs = RenderScript.create(context);
+        }
 
         m_center = center;
         m_radius = radius;
@@ -53,18 +57,22 @@ public class RadialTwist extends FilterBase
     {
         Bitmap result = bmp.copy(Bitmap.Config.ARGB_8888, true);
 
-        Allocation inAlloc = Allocation.createFromBitmap(m_Rs, bmp);
-        Allocation outAlloc = Allocation.createFromBitmap(m_Rs, result);
-        ScriptC_twist script = new ScriptC_twist(m_Rs);
+        Allocation inAlloc = Allocation.createFromBitmap(s_Rs, bmp);
+        Allocation outAlloc = Allocation.createFromBitmap(s_Rs, result);
 
-        script.set_m_center(new Float2(m_center.x, m_center.y));
-        script.set_m_radius(m_radius);
-        script.set_m_twist(m_twist);
-        script.set_m_source(inAlloc);
-        script.set_m_width(bmp.getWidth());
-        script.set_m_height(bmp.getHeight());
+        if(s_twistScript == null)
+        {
+            s_twistScript = new ScriptC_twist(s_Rs);
+        }
 
-        script.forEach_twist(inAlloc, outAlloc);
+        s_twistScript.set_m_center(new Float2(m_center.x, m_center.y));
+        s_twistScript.set_m_radius(m_radius);
+        s_twistScript.set_m_twist(m_twist);
+        s_twistScript.set_m_source(inAlloc);
+        s_twistScript.set_m_width(bmp.getWidth());
+        s_twistScript.set_m_height(bmp.getHeight());
+
+        s_twistScript.forEach_twist(inAlloc, outAlloc);
 
         outAlloc.copyTo(result);
 
