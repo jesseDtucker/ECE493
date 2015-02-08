@@ -248,16 +248,8 @@ public final class GestureOverlay extends SurfaceView implements SurfaceHolder.C
 
     private static void DrawPinch(GestureHelper.PinchInfo pinchInfo, Canvas canvas)
     {
-        //DrawCircle(pinchInfo.StartP1.x, pinchInfo.StartP1.y, FINGER_SIZE, canvas);
-        //DrawCircle(pinchInfo.StartP2.x, pinchInfo.StartP2.y, FINGER_SIZE, canvas);
         DrawCircle(pinchInfo.CurrentP1.x, pinchInfo.CurrentP1.y, FINGER_SIZE, canvas);
         DrawCircle(pinchInfo.CurrentP2.x, pinchInfo.CurrentP2.y, FINGER_SIZE, canvas);
-
-        /*canvas.drawLine(pinchInfo.StartP1.x, pinchInfo.StartP1.y,
-                pinchInfo.StartP2.x, pinchInfo.StartP2.y,
-                s_line);*/
-
-
 
         canvas.drawLine(pinchInfo.CurrentP1.x, pinchInfo.CurrentP1.y,
                 pinchInfo.CurrentP2.x, pinchInfo.CurrentP2.y,
@@ -303,12 +295,15 @@ public final class GestureOverlay extends SurfaceView implements SurfaceHolder.C
         DrawCircle(swipeInfo.CurrentPoint.x,
                 swipeInfo.CurrentPoint.y,
                 FINGER_SIZE, canvas);
+
+        // TODO::JT strength
     }
 
     private static void DrawHold(GestureHelper.HoldInfo holdInfo, Canvas canvas)
     {
         float secondsDown = holdInfo.timeHeld / 1000.0f;
         float radius = secondsDown * HOLD_RADIAL_SPEED;
+        holdInfo.radius = radius;
 
         DrawCircle(holdInfo.centerPoint.x,
                 holdInfo.centerPoint.y,

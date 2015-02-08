@@ -37,6 +37,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     ProgressDialog m_progressDialog = null;
     GestureHelper m_gestureHelper = null;
     GestureOverlay m_gestureOverlay = null;
+    FilterTask m_filterTask = null;
 
     // Courtesy of : http://stackoverflow.com/questions/364985/algorithm-for-finding-the-smallest-power-of-two-thats-greater-or-equal-to-a-giv
     private static int NextLargestPowerOfTwo(int x)
@@ -156,6 +157,11 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             return;
         }
 
+        if(m_filterTask != null)
+        {
+            return;
+        }
+
         m_progressDialog = new ProgressDialog(MainActivity.this);
         m_progressDialog.setMessage("Processing Image...");
         m_progressDialog.setCancelable(false);
@@ -164,7 +170,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         m_progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         m_progressDialog.show();
 
-        (new FilterTask(m_selectedImage)).execute(m_selectedFilterName);
+        m_filterTask = new FilterTask(m_selectedImage);
+        m_filterTask.execute(m_selectedFilterName);
     }
 
     @Override
@@ -274,6 +281,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     {
         Bitmap m_source = null;
         int m_filterSize = 0;
+        FilterBase m_filter = null;
 
         public FilterTask(Bitmap bmp)
         {
@@ -281,29 +289,47 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             m_source = bmp;
         }
 
+        public FilterTask(Bitmap bmp, FilterBase filter)
+        {
+            Util.Assert(bmp != null, "Cannot filter a null bitmap!");
+            Util.Assert(filter != null, "Null filter makes no sense, call the other ctor!");
+            m_source = bmp;
+            m_filter = filter;
+        }
+
+        private FilterBase SelectFilter(String name)
+        {
+            FilterBase result = null;
+            switch (name)
+            {
+                case "Median Filter":
+                    m_filterSize = Settings.GetMedianFilterSize(getApplicationContext());
+                    result = (new MedianFilter(m_filterSize));
+                    break;
+                case "Mean Filter":
+                    m_filterSize = Settings.GetMeanFilterSize(getApplicationContext());
+                    result = (new MeanFilter(m_filterSize));
+                    break;
+                default:
+                    Util.Fail("Unidentified filter : " + name);
+            }
+
+            return result;
+        }
+
         @Override
         protected Bitmap doInBackground(String... params)
         {
             Bitmap result = null;
-            Util.Assert(params.length == 1, "Filter task only expects one filter to apply!");
+            Util.Assert(params.length == 1 || m_filter != null, "Filter task requires a filter or one filter name!");
             FilterUpdateListener listener = new FilterUpdateListener();
 
-            Point pos = new Point(m_source.getWidth() / 2, m_source.getHeight() / 2);
-            float radius = Math.min(m_source.getWidth(), m_source.getHeight()) / 2.0f;
-
-            switch (params[0])
+            if(m_filter == null)
             {
-                case "Median Filter":
-                    m_filterSize = Settings.GetMedianFilterSize(getApplicationContext());
-                    result = (new PartialBlockify(getApplicationContext(), 25.0f, 25.0f, 0.5f)).ApplyFilter(m_source, listener);
-                    break;
-                case "Mean Filter":
-                    m_filterSize = Settings.GetMeanFilterSize(getApplicationContext());
-                    result = (new RadialTwist(pos, radius, (float)(Math.PI) / 8.0f, getApplicationContext())).ApplyFilter(m_source, listener);
-                    break;
-                default:
-                    Util.Fail("Unidentified filter : " + params[0]);
+                m_filter = SelectFilter(params[0]);
             }
+
+            result = m_filter.ApplyFilter(m_source, listener);
 
             return result;
         }
@@ -323,6 +349,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             imgView.setImageBitmap(m_selectedImage);
 
             m_progressDialog.hide();
+            m_filterTask = null;
         }
 
         private class FilterUpdateListener implements FilterBase.ProgressListener

@@ -180,6 +180,7 @@ public final class GestureHelper implements View.OnTouchListener
     {
         public long timeHeld = 0; // milliseconds
         public Point centerPoint;
+        public float radius;
     }
 
     class PinchInfo
@@ -188,12 +189,14 @@ public final class GestureHelper implements View.OnTouchListener
         public Point CurrentP2;
         public Point StartP1;
         public Point StartP2;
+        public float Angle;
     }
 
     class SwipeInfo
     {
         public Point StartPoint;
         public Point CurrentPoint;
+        public float Strength;
     }
 
     interface IGestureListener
