@@ -8,9 +8,12 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,11 +24,18 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity extends ActionBarActivity implements AdapterView.OnItemSelectedListener, GestureHelper.IGestureListener
 {
+    private static final String TAG = "Main Activity";
+
     static final int PICK_PHOTO = 100;
+    static final int TAKE_PHOTO = 101;
     // max width or height the application will accept. Anything
     // larger will be downsampled
     final int MAX_IMG_WIDTH = 2048;
@@ -34,12 +44,13 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     final float HOLD_TIME = 0.8f; // seconds;
     final float SWIPE_DISTANCE = 35.0f;
 
-    Bitmap m_selectedImage = null;
-    String m_selectedFilterName = "";
-    ProgressDialog m_progressDialog = null;
-    GestureHelper m_gestureHelper = null;
-    GestureOverlay m_gestureOverlay = null;
-    FilterTask m_filterTask = null;
+    private Bitmap m_selectedImage = null;
+    private String m_selectedFilterName = "";
+    private ProgressDialog m_progressDialog = null;
+    private GestureHelper m_gestureHelper = null;
+    private GestureOverlay m_gestureOverlay = null;
+    private FilterTask m_filterTask = null;
+    private Uri m_photoPath = null;
 
     // Courtesy of : http://stackoverflow.com/questions/364985/algorithm-for-finding-the-smallest-power-of-two-thats-greater-or-equal-to-a-giv
     private static int NextLargestPowerOfTwo(int x)
@@ -109,45 +120,103 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         startActivityForResult(photoPicker, PICK_PHOTO);
     }
 
+    private void TakePicture()
+    {
+        try
+        {
+            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String imageFileName = "JPEG_" + timeStamp + "_";
+            File storageDir = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES);
+            File image = File.createTempFile(
+                    imageFileName,  /* prefix */
+                    ".jpg",         /* suffix */
+                    storageDir      /* directory */
+            );
+
+            m_photoPath = Uri.fromFile(image);
+
+            if (image != null)
+            {
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                startActivityForResult(takePictureIntent, TAKE_PHOTO);
+            }
+        }
+        catch (IOException e)
+        {
+            Log.e(TAG, e.getMessage());
+        }
+    }
+
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
-        if (requestCode == PICK_PHOTO)
+        switch (requestCode)
         {
-            if (resultCode == RESULT_OK)
-            {
-                Uri imageUri = data.getData();
-                ImageView imgView = (ImageView) findViewById(R.id.image_view);
-                try
-                {
-                    BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-                    bitmapOptions.inJustDecodeBounds = true;
+            case PICK_PHOTO:
+                OnPickPhoto(resultCode, data);
+                break;
+            case TAKE_PHOTO:
+                OnTakePhoto();
+                break;
+            default:
+                Util.Fail("Unhandled activity result" + ((Integer)(resultCode)).toString());
+        }
+    }
 
-                    // just getting the size first
-                    BitmapFactory.decodeStream(
-                            getContentResolver().openInputStream(imageUri)
-                            , null
-                            , bitmapOptions);
+    private void OnTakePhoto()
+    {
+        Util.Assert(m_photoPath != null);
+        SetSelectedImage(m_photoPath);
 
-                    bitmapOptions.inSampleSize = CalculateInSampleSize(bitmapOptions, MAX_IMG_WIDTH, MAX_IMG_HEIGHT);
-                    bitmapOptions.inJustDecodeBounds = false;
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        mediaScanIntent.setData(m_photoPath);
+        this.sendBroadcast(mediaScanIntent);
+    }
 
-                    m_selectedImage = BitmapFactory.decodeStream(
-                            getContentResolver().openInputStream(imageUri)
-                            , null
-                            , bitmapOptions);
+    private void OnPickPhoto(int resultCode, Intent data)
+    {
+        if (resultCode == RESULT_OK)
+        {
+            SetSelectedImage(data.getData());
+        }
+    }
 
-                    imgView.setImageBitmap(m_selectedImage);
+    private void SetSelectedImage(Uri path)
+    {
+        m_photoPath = path;
+        ImageView imgView = (ImageView) findViewById(R.id.image_view);
+        try
+        {
+            BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+            bitmapOptions.inJustDecodeBounds = true;
 
-                    Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
-                    filterControls.setEnabled(true);
-                } catch (FileNotFoundException e)
-                {
-                    Toast toast = Toast.makeText(getApplicationContext(),
-                            "Could not find image!",
-                            Toast.LENGTH_LONG);
-                    toast.show();
-                }
-            }
+            // just getting the size first
+            BitmapFactory.decodeStream(
+                    getContentResolver().openInputStream(m_photoPath)
+                    , null
+                    , bitmapOptions);
+
+            bitmapOptions.inSampleSize = CalculateInSampleSize(bitmapOptions, MAX_IMG_WIDTH, MAX_IMG_HEIGHT);
+            bitmapOptions.inJustDecodeBounds = false;
+
+            m_selectedImage = BitmapFactory.decodeStream(
+                    getContentResolver().openInputStream(m_photoPath)
+                    , null
+                    , bitmapOptions);
+
+            imgView.setImageBitmap(m_selectedImage);
+
+            Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
+            filterControls.setEnabled(true);
+        }
+        catch (FileNotFoundException e)
+        {
+            Toast toast = Toast.makeText(getApplicationContext(),
+                    "Could not find image!",
+                    Toast.LENGTH_LONG);
+            toast.show();
         }
     }
 
@@ -200,20 +269,31 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings)
+        switch (id)
         {
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-            return true;
+            case R.id.action_settings:
+                OpenSettings();
+                return true;
+            case R.id.saveButton:
+                Util.Fail("TODO::JT");
+            case R.id.undoButton:
+                Util.Fail("TODO::JT");
+            case R.id.cameraButton:
+                TakePicture();
+                return true;
+            default:
+                Util.Fail("Unhandled option id : " + ((Integer)(id)).toString());
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void OpenSettings()
+    {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 
     @Override
