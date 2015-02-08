@@ -159,19 +159,22 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
                 OnPickPhoto(resultCode, data);
                 break;
             case TAKE_PHOTO:
-                OnTakePhoto();
+                OnTakePhoto(resultCode);
                 break;
             default:
                 Util.Fail("Unhandled activity result" + ((Integer)(resultCode)).toString());
         }
     }
 
-    private void OnTakePhoto()
+    private void OnTakePhoto(int resultCode)
     {
-        Util.Assert(m_photoPath != null);
-        SetSelectedImage(m_photoPath);
+        if(resultCode == RESULT_OK)
+        {
+            Util.Assert(m_photoPath != null);
+            SetSelectedImage(m_photoPath);
 
-        AddToGallery(m_photoPath);
+            AddToGallery(m_photoPath);
+        }
     }
 
     private void AddToGallery(Uri path)
@@ -228,11 +231,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
     public void ApplyFilter(View v)
     {
-        if (m_selectedImage == null)
-        {
-            Util.Fail("This should not be an available option if no image is available!");
-            return;
-        }
+        Util.Assert(m_selectedImage != null, "This should not be an available option if no image is available!");
 
         LaunchFilter();
     }
