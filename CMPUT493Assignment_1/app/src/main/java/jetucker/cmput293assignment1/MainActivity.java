@@ -26,6 +26,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -170,8 +171,13 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         Util.Assert(m_photoPath != null);
         SetSelectedImage(m_photoPath);
 
+        AddToGallery(m_photoPath);
+    }
+
+    private void AddToGallery(Uri path)
+    {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(m_photoPath);
+        mediaScanIntent.setData(path);
         this.sendBroadcast(mediaScanIntent);
     }
 
@@ -277,9 +283,11 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
                 OpenSettings();
                 return true;
             case R.id.saveButton:
-                Util.Fail("TODO::JT");
+                SaveImage();
+                return true;
             case R.id.undoButton:
                 Util.Fail("TODO::JT");
+                return true;
             case R.id.cameraButton:
                 TakePicture();
                 return true;
@@ -288,6 +296,40 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void SaveImage()
+    {
+        if(m_selectedImage == null)
+        {
+            return;
+        }
+
+        try
+        {
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String imageFileName = "PNG_" + timeStamp + ".png";
+            File storageDir = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES);
+            File image = new File(storageDir, imageFileName);
+
+            FileOutputStream outStream = new FileOutputStream(image);
+            // try with resources requires API 19...
+            try
+            {
+                boolean wasSuccess = m_selectedImage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+                Util.Assert(wasSuccess, "Failed to compress image to file");
+                AddToGallery(Uri.fromFile(image));
+            }
+            finally
+            {
+                outStream.close();
+            }
+        }
+        catch (IOException e)
+        {
+            Log.e(TAG, e.getMessage());
+        }
     }
 
     private void OpenSettings()
