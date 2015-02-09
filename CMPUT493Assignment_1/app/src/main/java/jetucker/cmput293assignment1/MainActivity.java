@@ -50,6 +50,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     private Uri m_photoPath = null;
     private UndoSystem m_undo = null;
     private Menu m_menu = null;
+    private SaveTask m_saveTask = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -329,7 +330,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
     private void SaveImage()
     {
-        if(m_selectedImage == null)
+        if(m_selectedImage == null || m_saveTask != null)
         {
             return;
         }
@@ -340,9 +341,21 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
                 Environment.DIRECTORY_PICTURES);
         File image = new File(storageDir, imageFileName);
 
-        Util.WriteBitmapToFile(m_selectedImage, image);
+        m_saveTask = new SaveTask(m_selectedImage, image, new SaveTask.OnSaveCompleteListener()
+        {
+            @Override
+            public void OnComplete(File savedFile)
+            {
+                Toast toast = Toast.makeText(getApplicationContext(),
+                        "Image Saved",
+                        Toast.LENGTH_LONG);
+                toast.show();
+                AddToGallery(Uri.fromFile(savedFile));
+                m_saveTask = null;
+            }
+        });
 
-        AddToGallery(Uri.fromFile(image));
+        m_saveTask.execute();
     }
 
     private void OpenSettings()
