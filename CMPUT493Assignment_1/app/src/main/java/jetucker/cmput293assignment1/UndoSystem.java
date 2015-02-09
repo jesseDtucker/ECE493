@@ -1,19 +1,15 @@
 package jetucker.cmput293assignment1;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Environment;
-import android.util.Log;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Stack;
+import java.util.LinkedList;
 
 /**
  * Created by Jesse on 2015-02-08.
@@ -24,17 +20,16 @@ public final class UndoSystem
 {
     private static String TAG = "Undo System";
 
-    private int m_undoLimit = 50; // TODO::JT use this!
-    private Stack<Uri> m_images = new Stack<>();
+    private LinkedList<Uri> m_images = new LinkedList<>();
     private File m_cacheFolder = null;
     private ContentResolver m_contentResolver = null;
+    private Context m_context;
 
-    UndoSystem(int undoLimit, File cacheFolder, ContentResolver contentResolver)
+    UndoSystem(File cacheFolder, ContentResolver contentResolver, Context context)
     {
-        Util.Assert(undoLimit > 0);
-        m_undoLimit = undoLimit;
         m_cacheFolder = cacheFolder;
         m_contentResolver = contentResolver;
+        m_context = context;
 
         Clear();
     }
@@ -42,6 +37,7 @@ public final class UndoSystem
     public void Clear()
     {
         File[] existingFiles = m_cacheFolder.listFiles(new ImageFilter());
+        m_images = new LinkedList<>();
         for(File f : existingFiles)
         {
             boolean isDeleted = f.delete();
@@ -51,12 +47,19 @@ public final class UndoSystem
 
     public void AddImage(Bitmap bmp)
     {
-        m_images.push(SaveBitmap(bmp));
+        m_images.addLast(SaveBitmap(bmp));
+        LimitSize();
     }
 
     public Bitmap PopImage()
     {
-        Util.Assert(m_images.size() != 0);
+        LimitSize();
+
+        if(m_images.size() == 0)
+        {
+            return null;
+        }
+
         Bitmap result = null;
         boolean lastTry = false;
 
@@ -66,16 +69,27 @@ public final class UndoSystem
         {
             if(m_images.size() > 1)
             {
-                result = Util.LoadBitmap(m_contentResolver, m_images.pop());
+                result = Util.LoadBitmap(m_contentResolver, m_images.removeLast());
             }
             else
             {
-                result = Util.LoadBitmap(m_contentResolver, m_images.peek());
+                result = Util.LoadBitmap(m_contentResolver, m_images.getFirst());
                 lastTry = true;
             }
         }
 
         return result;
+    }
+
+    private void LimitSize()
+    {
+        while(m_images.size() > Settings.GetUndoLimit(m_context))
+        {
+            // remove from front
+            Uri img = m_images.removeFirst();
+            File file = new File(img.getPath());
+            file.delete();
+        }
     }
 
     private Uri SaveBitmap(Bitmap bmp)

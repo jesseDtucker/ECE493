@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 /**
@@ -22,7 +23,15 @@ public class SettingsActivity extends ActionBarActivity
     private final int MAX_FILTER_SIZE = 25;
 
     private Integer m_newValue = null;
-    private boolean m_isSettingMedian = false;
+
+    enum SelectedSetting
+    {
+        MEDIAN,
+        MEAN,
+        UNDO_LIMIT
+    }
+
+    private SelectedSetting m_selectedSetting;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -32,12 +41,15 @@ public class SettingsActivity extends ActionBarActivity
 
         Button medianBtn = (Button) findViewById(R.id.medianFilterSizeField);
         Button meanBtn = (Button) findViewById(R.id.meanFilterSizeField);
+        Button undoBtn = (Button) findViewById(R.id.undoLimitSizeField);
 
         Integer medianFilterSize = Settings.GetMedianFilterSize(getApplicationContext());
         Integer meanFilterSize = Settings.GetMeanFilterSize(getApplicationContext());
+        Integer undoLimit = Settings.GetUndoLimit(getApplicationContext());
 
         medianBtn.setText(medianFilterSize.toString());
         meanBtn.setText(meanFilterSize.toString());
+        undoBtn.setText(undoLimit.toString());
     }
 
 
@@ -49,14 +61,20 @@ public class SettingsActivity extends ActionBarActivity
 
     public void MedianFilterSelected(View v)
     {
-        m_isSettingMedian = true;
-        StartSelectOddNumber(Settings.GetMedianFilterSize(getApplicationContext()));
+        m_selectedSetting = SelectedSetting.MEDIAN;
+        StartSelectNumber(Settings.GetMedianFilterSize(getApplicationContext()), true);
     }
 
     public void MeanFilterSelected(View v)
     {
-        m_isSettingMedian = false;
-        StartSelectOddNumber(Settings.GetMeanFilterSize(getApplicationContext()));
+        m_selectedSetting = SelectedSetting.MEAN;
+        StartSelectNumber(Settings.GetMeanFilterSize(getApplicationContext()), true);
+    }
+
+    public void UndoFilterSelected(View v)
+    {
+        m_selectedSetting = SelectedSetting.UNDO_LIMIT;
+        StartSelectNumber(Settings.GetUndoLimit(getApplicationContext()), false);
     }
 
     /**
@@ -66,16 +84,25 @@ public class SettingsActivity extends ActionBarActivity
     {
         Util.Assert(m_newValue != null);
 
-        if (m_isSettingMedian)
+        switch (m_selectedSetting)
         {
-            Button medianBtn = (Button) findViewById(R.id.medianFilterSizeField);
-            Settings.SetMedianFilterSize(getApplicationContext(), m_newValue);
-            medianBtn.setText(m_newValue.toString());
-        } else
-        {
-            Button meanBtn = (Button) findViewById(R.id.meanFilterSizeField);
-            Settings.SetMeanFilterSize(getApplicationContext(), m_newValue);
-            meanBtn.setText(m_newValue.toString());
+            case MEAN:
+                Button meanBtn = (Button) findViewById(R.id.meanFilterSizeField);
+                Settings.SetMeanFilterSize(getApplicationContext(), m_newValue);
+                meanBtn.setText(m_newValue.toString());
+                break;
+            case MEDIAN:
+                Button medianBtn = (Button) findViewById(R.id.medianFilterSizeField);
+                Settings.SetMedianFilterSize(getApplicationContext(), m_newValue);
+                medianBtn.setText(m_newValue.toString());
+                break;
+            case UNDO_LIMIT:
+                Button undoLimitBtn = (Button) findViewById(R.id.undoLimitSizeField);
+                Settings.SetUndoLimit(getApplicationContext(), m_newValue);
+                undoLimitBtn.setText(m_newValue.toString());
+                break;
+            default:
+                Util.Fail("Unknown value to set");
         }
 
         m_newValue = null;
@@ -84,9 +111,9 @@ public class SettingsActivity extends ActionBarActivity
     /**
      * Request an odd number within the valid range from the user.
      *
-     * @param currentValue
+     * @param currentValue the current value of the field
      */
-    private void StartSelectOddNumber(int currentValue)
+    private void StartSelectNumber(int currentValue, final boolean mustBeOdd)
     {
         LayoutInflater inflater = getLayoutInflater();
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(SettingsActivity.this);
@@ -106,7 +133,10 @@ public class SettingsActivity extends ActionBarActivity
                 {
                     // set the new value and round off to an odd number
                     m_newValue = MIN_FILTER_SIZE + progress;
-                    m_newValue = m_newValue % 2 == 0 ? m_newValue + 1 : m_newValue;
+                    if(mustBeOdd)
+                    {
+                        m_newValue = m_newValue % 2 == 0 ? m_newValue + 1 : m_newValue;
+                    }
                     seekBarVal.setText(m_newValue.toString());
                 }
             }

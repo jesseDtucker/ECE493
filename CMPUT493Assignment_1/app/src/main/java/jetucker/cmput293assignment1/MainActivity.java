@@ -76,7 +76,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         ImageView imgView = (ImageView) findViewById(R.id.image_view);
         imgView.setOnTouchListener(m_gestureHelper);
 
-        m_undo = new UndoSystem(10, getCacheDir(), getContentResolver());
+        m_undo = new UndoSystem(getCacheDir(), getContentResolver(), getApplicationContext());
     }
 
     public void SelectImage(View v)
@@ -167,7 +167,6 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         if(m_selectedImage != null)
         {
             m_undo.Clear();
-            m_undo.AddImage(m_selectedImage);
 
             imgView.setImageBitmap(m_selectedImage);
         }
