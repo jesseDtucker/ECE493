@@ -49,6 +49,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     private FilterTask m_filterTask = null;
     private Uri m_photoPath = null;
     private UndoSystem m_undo = null;
+    private Menu m_menu = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -188,8 +189,17 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             toast.show();
         }
 
+        UpdateUIElements();
+    }
+
+    private void UpdateUIElements()
+    {
         Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
         filterControls.setEnabled(m_selectedImage != null);
+
+        m_menu.findItem(R.id.undoButton).setEnabled(m_selectedImage != null && m_undo.GetUndoAvailable() > 0);
+        m_menu.findItem(R.id.discardButton).setEnabled(m_selectedImage != null);
+        m_menu.findItem(R.id.saveButton).setEnabled(m_selectedImage != null);
     }
 
     public void ApplyFilter(View v)
@@ -231,6 +241,13 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        menu.findItem(R.id.undoButton).setEnabled(false);
+        menu.findItem(R.id.saveButton).setEnabled(false);
+        menu.findItem(R.id.discardButton).setEnabled(false);
+
+        m_menu = menu;
+
         return true;
     }
 
@@ -282,6 +299,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
                 ImageView imgView = (ImageView) findViewById(R.id.image_view);
                 imgView.setImageBitmap(null);
                 m_undo.Clear();
+
+                UpdateUIElements();
             }
         });
 
@@ -304,6 +323,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             ImageView imgView = (ImageView) findViewById(R.id.image_view);
             imgView.setImageBitmap(prev);
         }
+
+        UpdateUIElements();
     }
 
     private void SaveImage()
@@ -553,6 +574,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
             m_progressDialog.hide();
             m_filterTask = null;
+
+            UpdateUIElements();
         }
 
         private class FilterUpdateListener implements FilterBase.ProgressListener

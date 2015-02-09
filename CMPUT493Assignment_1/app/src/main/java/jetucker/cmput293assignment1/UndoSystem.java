@@ -61,24 +61,20 @@ public final class UndoSystem
         }
 
         Bitmap result = null;
-        boolean lastTry = false;
 
         // files in the cache folder can be deleted at any time by the system
         // as such we should try to undo to the last available file. If one exists
-        while(result == null && !lastTry)
+        while(result == null && m_images.size() > 0)
         {
-            if(m_images.size() > 1)
-            {
-                result = Util.LoadBitmap(m_contentResolver, m_images.removeLast());
-            }
-            else
-            {
-                result = Util.LoadBitmap(m_contentResolver, m_images.getFirst());
-                lastTry = true;
-            }
+            result = Util.LoadBitmap(m_contentResolver, m_images.removeLast());
         }
 
         return result;
+    }
+
+    public int GetUndoAvailable()
+    {
+        return m_images.size();
     }
 
     private void LimitSize()
