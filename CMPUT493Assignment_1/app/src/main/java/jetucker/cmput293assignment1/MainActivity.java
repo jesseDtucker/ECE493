@@ -37,10 +37,6 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
     static final int PICK_PHOTO = 100;
     static final int TAKE_PHOTO = 101;
-    // max width or height the application will accept. Anything
-    // larger will be downsampled
-    final int MAX_IMG_WIDTH = 2048;
-    final int MAX_IMG_HEIGHT = 2048;
 
     final float HOLD_TIME = 0.8f; // seconds;
     final float SWIPE_DISTANCE = 35.0f;
@@ -53,37 +49,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     private FilterTask m_filterTask = null;
     private Uri m_photoPath = null;
 
-    // Courtesy of : http://stackoverflow.com/questions/364985/algorithm-for-finding-the-smallest-power-of-two-thats-greater-or-equal-to-a-giv
-    private static int NextLargestPowerOfTwo(int x)
-    {
-        if (x < 0)
-            return 0;
-        --x;
-        x |= x >> 1;
-        x |= x >> 2;
-        x |= x >> 4;
-        x |= x >> 8;
-        x |= x >> 16;
-        return x + 1;
-    }
 
-    /**
-     * Calculates the sample size needed to keep the provided image under
-     * the maxWidth and maxHeight limits. Will always return a power of 2.
-     */
-    private static int CalculateInSampleSize(BitmapFactory.Options options,
-                                             int maxWidth,
-                                             int maxHeight)
-    {
-        // Raw height and width of image
-        int height = options.outHeight;
-        int width = options.outWidth;
-
-        int widthSample = NextLargestPowerOfTwo(width / maxWidth);
-        int heightSample = NextLargestPowerOfTwo(height / maxHeight);
-
-        return Math.max(1, Math.max(widthSample, heightSample));
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -196,31 +162,17 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     {
         m_photoPath = path;
         ImageView imgView = (ImageView) findViewById(R.id.image_view);
-        try
+
+        m_selectedImage = Util.LoadBitmap(getContentResolver(), m_photoPath);
+
+        if(m_selectedImage != null)
         {
-            BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-            bitmapOptions.inJustDecodeBounds = true;
-
-            // just getting the size first
-            BitmapFactory.decodeStream(
-                    getContentResolver().openInputStream(m_photoPath)
-                    , null
-                    , bitmapOptions);
-
-            bitmapOptions.inSampleSize = CalculateInSampleSize(bitmapOptions, MAX_IMG_WIDTH, MAX_IMG_HEIGHT);
-            bitmapOptions.inJustDecodeBounds = false;
-
-            m_selectedImage = BitmapFactory.decodeStream(
-                    getContentResolver().openInputStream(m_photoPath)
-                    , null
-                    , bitmapOptions);
-
             imgView.setImageBitmap(m_selectedImage);
 
             Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
             filterControls.setEnabled(true);
         }
-        catch (FileNotFoundException e)
+        else
         {
             Toast toast = Toast.makeText(getApplicationContext(),
                     "Could not find image!",
@@ -304,31 +256,15 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             return;
         }
 
-        try
-        {
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String imageFileName = "PNG_" + timeStamp + ".png";
-            File storageDir = Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_PICTURES);
-            File image = new File(storageDir, imageFileName);
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "PNG_" + timeStamp + ".png";
+        File storageDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+        File image = new File(storageDir, imageFileName);
 
-            FileOutputStream outStream = new FileOutputStream(image);
-            // try with resources requires API 19...
-            try
-            {
-                boolean wasSuccess = m_selectedImage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
-                Util.Assert(wasSuccess, "Failed to compress image to file");
-                AddToGallery(Uri.fromFile(image));
-            }
-            finally
-            {
-                outStream.close();
-            }
-        }
-        catch (IOException e)
-        {
-            Log.e(TAG, e.getMessage());
-        }
+        Util.WriteBitmapToFile(m_selectedImage, image);
+
+        AddToGallery(Uri.fromFile(image));
     }
 
     private void OpenSettings()
