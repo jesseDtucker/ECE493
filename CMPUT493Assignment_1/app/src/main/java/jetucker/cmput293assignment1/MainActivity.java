@@ -202,10 +202,13 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
 
     private void UpdateUIElements()
     {
+        if(m_menu == null)
+        {
+            return;
+        }
+
         Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
         filterControls.setEnabled(m_selectedImage != null);
-
-        boolean undoEnabled = m_selectedImage != null && m_undo.GetUndoAvailable() > 0;
 
         m_menu.findItem(R.id.undoButton).setEnabled(m_selectedImage != null && m_undo.GetUndoAvailable() > 0);
         m_menu.findItem(R.id.discardButton).setEnabled(m_selectedImage != null && m_hasUnsavedChanges);
