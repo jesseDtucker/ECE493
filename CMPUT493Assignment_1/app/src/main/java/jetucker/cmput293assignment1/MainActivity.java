@@ -53,6 +53,7 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
     private AsyncUndo m_undo = null;
     private Menu m_menu = null;
     private SaveTask m_saveTask = null;
+    private boolean m_hasUnsavedChanges = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -150,6 +151,8 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
     {
         if(resultCode == RESULT_OK)
         {
+            m_hasUnsavedChanges = false;
+
             Util.Assert(m_photoPath != null);
             SetSelectedImage(m_photoPath);
 
@@ -168,6 +171,7 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
     {
         if (resultCode == RESULT_OK)
         {
+            m_hasUnsavedChanges = false;
             SetSelectedImage(data.getData());
         }
     }
@@ -204,7 +208,7 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
         boolean undoEnabled = m_selectedImage != null && m_undo.GetUndoAvailable() > 0;
 
         m_menu.findItem(R.id.undoButton).setEnabled(m_selectedImage != null && m_undo.GetUndoAvailable() > 0);
-        m_menu.findItem(R.id.discardButton).setEnabled(m_selectedImage != null);
+        m_menu.findItem(R.id.discardButton).setEnabled(m_selectedImage != null && m_hasUnsavedChanges);
         m_menu.findItem(R.id.saveButton).setEnabled(m_selectedImage != null);
     }
 
@@ -237,6 +241,8 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
         m_progressDialog.setMax(100);
         m_progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         m_progressDialog.show();
+
+        m_hasUnsavedChanges = true;
 
         m_filterTask = new FilterTask(m_selectedImage, filter);
         m_filterTask.execute(m_selectedFilterName);
@@ -365,6 +371,8 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
                 m_saveTask = null;
             }
         });
+
+        m_hasUnsavedChanges = false;
 
         m_saveTask.execute();
     }
