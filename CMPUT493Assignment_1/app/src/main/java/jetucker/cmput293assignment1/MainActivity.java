@@ -77,6 +77,14 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         imgView.setOnTouchListener(m_gestureHelper);
 
         m_undo = new UndoSystem(getCacheDir(), getContentResolver(), getApplicationContext());
+
+        // we may have am image provided to us
+        Intent intent = getIntent();
+        Uri path = intent.getData();
+        if(path != null)
+        {
+            SetSelectedImage(path);
+        }
     }
 
     public void SelectImage(View v)
@@ -97,9 +105,9 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             File storageDir = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_PICTURES);
             File image = File.createTempFile(
-                    imageFileName,  /* prefix */
-                    ".jpg",         /* suffix */
-                    storageDir      /* directory */
+                    imageFileName,  // prefix
+                    ".jpg",         // suffix
+                    storageDir      // directory
             );
 
             m_photoPath = Uri.fromFile(image);
