@@ -11,6 +11,8 @@ import jetucker.cmput293assignment1.rs.ScriptC_twist;
 
 /**
  * Created by Jesse on 2015-02-03.
+ *
+ * Twists the image within a user defined circle
  */
 public class RadialTwist extends FilterBase
 {

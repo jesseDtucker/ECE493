@@ -18,8 +18,6 @@ import java.util.LinkedList;
  */
 public final class UndoSystem
 {
-    private static String TAG = "Undo System";
-
     private LinkedList<Uri> m_images = new LinkedList<>();
     private File m_cacheFolder = null;
     private ContentResolver m_contentResolver = null;
@@ -84,7 +82,8 @@ public final class UndoSystem
             // remove from front
             Uri img = m_images.removeFirst();
             File file = new File(img.getPath());
-            file.delete();
+            boolean wasDeleted = file.delete();
+            Util.Assert(wasDeleted);
         }
     }
 

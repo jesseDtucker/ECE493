@@ -9,6 +9,8 @@ import jetucker.cmput293assignment1.rs.ScriptC_PartialBlockify;
 
 /**
  * Created by Jesse on 2015-02-05.
+ *
+ * Partially pixelifies an image.
  */
 public class PartialBlockify extends FilterBase
 {

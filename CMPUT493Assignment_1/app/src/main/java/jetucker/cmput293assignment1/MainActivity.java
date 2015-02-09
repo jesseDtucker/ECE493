@@ -5,7 +5,6 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -120,11 +119,8 @@ public class MainActivity extends ActionBarActivity implements  AdapterView.OnIt
 
             m_photoPath = Uri.fromFile(image);
 
-            if (image != null)
-            {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
-                startActivityForResult(takePictureIntent, TAKE_PHOTO);
-            }
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+            startActivityForResult(takePictureIntent, TAKE_PHOTO);
         }
         catch (IOException e)
         {

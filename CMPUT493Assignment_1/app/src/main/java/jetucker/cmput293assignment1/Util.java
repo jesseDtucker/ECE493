@@ -6,14 +6,11 @@ import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.net.Uri;
 import android.util.Log;
-import android.widget.Button;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Util functions
@@ -114,10 +111,6 @@ public class Util
         {
             Log.e(TAG, e.getMessage());
         }
-        catch (IOException e)
-        {
-            Log.e(TAG, e.getMessage());
-        }
 
         return result;
     }
@@ -166,6 +159,6 @@ public class Util
     {
         float angle1 = GetAngle(line1Point1, line1Point2);
         float angle2 = GetAngle(line2Point1, line2Point2);
-        return (float)(angle1-angle2);
+        return angle1-angle2;
     }
 }
