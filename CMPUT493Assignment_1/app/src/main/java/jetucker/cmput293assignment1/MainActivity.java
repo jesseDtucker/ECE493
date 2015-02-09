@@ -1,6 +1,8 @@
 package jetucker.cmput293assignment1;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -78,7 +80,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
         m_undo = new UndoSystem(getCacheDir(), getContentResolver(), getApplicationContext());
 
-        // we may have am image provided to us
+        // we may have an image provided to us
         Intent intent = getIntent();
         Uri path = intent.getData();
         if(path != null)
@@ -251,11 +253,46 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             case R.id.cameraButton:
                 TakePicture();
                 return true;
+            case R.id.discardButton:
+                Discard();
+                return true;
             default:
                 Util.Fail("Unhandled option id : " + ((Integer)(id)).toString());
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void Discard()
+    {
+        if(m_selectedImage == null)
+        {
+            return;
+        }
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setTitle("Do you want to discard the image without saving?");
+        // alert.setMessage("Message");
+
+        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton)
+            {
+                //Your action here
+                m_selectedImage = null;
+                ImageView imgView = (ImageView) findViewById(R.id.image_view);
+                imgView.setImageBitmap(null);
+                m_undo.Clear();
+            }
+        });
+
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton)
+                {
+                    // do nothing
+                }
+            });
+
+        alert.show();
     }
 
     private void Undo()
