@@ -31,7 +31,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class MainActivity extends ActionBarActivity implements AdapterView.OnItemSelectedListener, GestureHelper.IGestureListener
+public class MainActivity extends ActionBarActivity implements  AdapterView.OnItemSelectedListener,
+                                                                GestureHelper.IGestureListener,
+                                                                AsyncUndo.AllWorkCompleteListener
 {
     private static final String TAG = "Main Activity";
 
@@ -48,7 +50,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     private GestureOverlay m_gestureOverlay = null;
     private FilterTask m_filterTask = null;
     private Uri m_photoPath = null;
-    private UndoSystem m_undo = null;
+    private AsyncUndo m_undo = null;
     private Menu m_menu = null;
     private SaveTask m_saveTask = null;
 
@@ -80,7 +82,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         ImageView imgView = (ImageView) findViewById(R.id.image_view);
         imgView.setOnTouchListener(m_gestureHelper);
 
-        m_undo = new UndoSystem(getCacheDir(), getContentResolver(), getApplicationContext());
+        UndoSystem undoSystem = new UndoSystem(getCacheDir(), getContentResolver(), getApplicationContext());
+        m_undo = new AsyncUndo(undoSystem, this);
 
         // we may have an image provided to us
         Intent intent = getIntent();
@@ -197,6 +200,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     {
         Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
         filterControls.setEnabled(m_selectedImage != null);
+
+        boolean undoEnabled = m_selectedImage != null && m_undo.GetUndoAvailable() > 0;
 
         m_menu.findItem(R.id.undoButton).setEnabled(m_selectedImage != null && m_undo.GetUndoAvailable() > 0);
         m_menu.findItem(R.id.discardButton).setEnabled(m_selectedImage != null);
@@ -317,15 +322,21 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
     private void Undo()
     {
-        Bitmap prev = m_undo.PopImage();
-        if(prev != null)
+        m_undo.PopImage(new AsyncUndo.PopImageCallback()
         {
-            m_selectedImage = prev;
-            ImageView imgView = (ImageView) findViewById(R.id.image_view);
-            imgView.setImageBitmap(prev);
-        }
+            @Override
+            public void ImageReady(Bitmap prev)
+            {
+                if (prev != null)
+                {
+                    m_selectedImage = prev;
+                    ImageView imgView = (ImageView) findViewById(R.id.image_view);
+                    imgView.setImageBitmap(prev);
+                }
 
-        UpdateUIElements();
+                UpdateUIElements();
+            }
+        });
     }
 
     private void SaveImage()
@@ -487,6 +498,12 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         return result;
     }
 
+    @Override
+    public void OnWorkComplete()
+    {
+        UpdateUIElements();
+    }
+
     /**
      * Simple task for performing the bitmap filtering.
      * Will update the progress dialogue as it works.
@@ -537,7 +554,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             }
 
             // save the previous image before applying
-            m_undo.AddImage(m_selectedImage);
+            m_undo.PushImage(m_selectedImage);
 
             try
             {
