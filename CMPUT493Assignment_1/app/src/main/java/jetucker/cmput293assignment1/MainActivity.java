@@ -25,8 +25,6 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -48,8 +46,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
     private GestureOverlay m_gestureOverlay = null;
     private FilterTask m_filterTask = null;
     private Uri m_photoPath = null;
-
-
+    private UndoSystem m_undo = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -78,6 +75,8 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
         ImageView imgView = (ImageView) findViewById(R.id.image_view);
         imgView.setOnTouchListener(m_gestureHelper);
+
+        m_undo = new UndoSystem(10, getCacheDir(), getContentResolver());
     }
 
     public void SelectImage(View v)
@@ -167,10 +166,10 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
 
         if(m_selectedImage != null)
         {
-            imgView.setImageBitmap(m_selectedImage);
+            m_undo.Clear();
+            m_undo.AddImage(m_selectedImage);
 
-            Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
-            filterControls.setEnabled(true);
+            imgView.setImageBitmap(m_selectedImage);
         }
         else
         {
@@ -179,6 +178,9 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
                     Toast.LENGTH_LONG);
             toast.show();
         }
+
+        Button filterControls = (Button) findViewById(R.id.apply_filter_btn);
+        filterControls.setEnabled(m_selectedImage != null);
     }
 
     public void ApplyFilter(View v)
@@ -237,7 +239,7 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
                 SaveImage();
                 return true;
             case R.id.undoButton:
-                Util.Fail("TODO::JT");
+                Undo();
                 return true;
             case R.id.cameraButton:
                 TakePicture();
@@ -247,6 +249,17 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void Undo()
+    {
+        Bitmap prev = m_undo.PopImage();
+        if(prev != null)
+        {
+            m_selectedImage = prev;
+            ImageView imgView = (ImageView) findViewById(R.id.image_view);
+            imgView.setImageBitmap(prev);
+        }
     }
 
     private void SaveImage()
@@ -406,12 +419,6 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
         int m_filterSize = 0;
         FilterBase m_filter = null;
 
-        public FilterTask(Bitmap bmp)
-        {
-            Util.Assert(bmp != null, "Cannot filter a null bitmap!");
-            m_source = bmp;
-        }
-
         public FilterTask(Bitmap bmp, FilterBase filter)
         {
             Util.Assert(bmp != null, "Cannot filter a null bitmap!");
@@ -450,6 +457,9 @@ public class MainActivity extends ActionBarActivity implements AdapterView.OnIte
             {
                 m_filter = SelectFilter(params[0]);
             }
+
+            // save the previous image before applying
+            m_undo.AddImage(m_selectedImage);
 
             try
             {
